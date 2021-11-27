@@ -13,6 +13,8 @@ const SCREEN_WIDTH : i32 = 80;
 const SCREEN_HEIGHT : i32 = 50;
 const FRAME_DURATION :  f32 = 75.0;  // in milliseconds
 const TERMINAL_VELOCITY: f32 = 2.0;
+const GRAVITY: f32 = 0.2;
+const FLAP_STRENGTH: f32 = 2.0;
 
 struct Obstacle {
     x: i32,
@@ -38,12 +40,12 @@ impl Obstacle {
 
         // Drop top half of the obstacle
         for y in 0..self.gap_y - half_size {
-            ctx.set(screen_x, y, RED, BLACK, to_cp437('/'))
+            ctx.set(screen_x, y, RED, BLACK, to_cp437('|'));
         }
 
         // Drop bottom half of the obstacle
         for y in self.gap_y + half_size..SCREEN_HEIGHT {
-            ctx.set(screen_x, y, RED, BLACK, to_cp437('/'))
+            ctx.set(screen_x, y, RED, BLACK, to_cp437('|'));
         }
     }
 
@@ -83,7 +85,7 @@ impl Player {
     fn gravity_and_move(&mut self){
         // NOTE: +ve velocity is in downwards screen direction, i.e. +ve Y co-ordinate direction
         if self.velocity < TERMINAL_VELOCITY {
-            self.velocity += 0.2; // increase gravity if velocity if less than 2.0
+            self.velocity += GRAVITY; // increase gravity if velocity if less than 2.0
         }
 
         self.y += self.velocity as i32; // cast to i32 and decrement y (casting rounds down)
@@ -97,7 +99,7 @@ impl Player {
     }
 
     fn flap(&mut self){
-        self.velocity = -2.0; // velocity in upwards direction
+        self.velocity = -FLAP_STRENGTH; // velocity in upwards direction
     }
 }
 
