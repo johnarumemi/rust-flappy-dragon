@@ -14,7 +14,7 @@ const SCREEN_HEIGHT : i32 = 50;
 const FRAME_DURATION :  f32 = 75.0;  // in milliseconds
 const TERMINAL_VELOCITY: f32 = 2.0;
 const GRAVITY: f32 = 0.2;
-const FLAP_STRENGTH: f32 = 2.0;
+const FLAP_STRENGTH: f32 = 1.0;
 
 struct Obstacle {
     x: i32,
@@ -38,12 +38,12 @@ impl Obstacle {
         let screen_x = self.x - player_x;
         let half_size = self.size / 2;
 
-        // Drop top half of the obstacle
+        // Draw top half of the obstacle
         for y in 0..self.gap_y - half_size {
             ctx.set(screen_x, y, RED, BLACK, to_cp437('|'));
         }
 
-        // Drop bottom half of the obstacle
+        // Draw bottom half of the obstacle
         for y in self.gap_y + half_size..SCREEN_HEIGHT {
             ctx.set(screen_x, y, RED, BLACK, to_cp437('|'));
         }
@@ -52,8 +52,8 @@ impl Obstacle {
     fn hit_obstacle(&self, player: &Player) -> bool {
         let half_size = self.size / 2;
         let does_x_match = player.x == self.x; // possible collision if at same x coordinate
-        let player_above_gap = player.y < self.gap_y - half_size; // compare with upper gap
-        let player_below_gap = player.y > self.gap_y + half_size; // compare with lower gap
+        let player_above_gap = (player.y as i32) < self.gap_y - half_size; // compare with upper gap
+        let player_below_gap = (player.y as i32) > self.gap_y + half_size; // compare with lower gap
 
         // return true if collision occurs
         does_x_match && (player_above_gap || player_below_gap)
@@ -63,7 +63,7 @@ impl Obstacle {
 // The Dragons current state
 struct Player {
     x: i32,     // world space location in terminal characters, represents progress through level
-    y: i32,     // vertical position in screen space
+    y: f32,     // vertical position in screen space
     velocity: f32   // players vertical velocity
 }
 impl Player {
@@ -71,7 +71,7 @@ impl Player {
     fn new(x: i32, y: i32) -> Self {
         Self {
             x,
-            y,
+            y: y as f32,
             velocity: 0.0,
         }
     }
@@ -79,7 +79,7 @@ impl Player {
     fn render(&mut self, ctx: &mut BTerm){ // allow to mutate instance and pass in context for game engine
         // sets a single character on the screen
         // this is screen space, world space is defined by values in player.x and player.y
-        ctx.set(0, self.y, YELLOW, BLACK, to_cp437('@'));
+        ctx.set(0, self.y as i32, YELLOW, BLACK, to_cp437('@'));
     }
 
     fn gravity_and_move(&mut self){
@@ -88,12 +88,12 @@ impl Player {
             self.velocity += GRAVITY; // increase gravity if velocity if less than 2.0
         }
 
-        self.y += self.velocity as i32; // cast to i32 and decrement y (casting rounds down)
+        self.y += self.velocity; // cast to i32 and decrement y (casting rounds down)
 
         self.x += 1;  // move horizontally across the screen
 
-        if self.y < 0 { // zero is the 'top' of the screen
-            self.y = 0;  // y can never be less than zero
+        if self.y < 0.0 { // zero is the 'top' of the screen
+            self.y = 0.0;  // y can never be less than zero
         }
 
     }
@@ -126,10 +126,10 @@ impl State {
 
     fn restart(&mut self){ // reset to initial state
         self.player.x = 5;
-        self.player.y = 25;
+        self.player.y = 25.0;
         self.frame_time = 0.0;
         self.mode = GameMode::Playing;
-        self.obstacle = Obstacle::new(SCREEN_WIDTH, 0);
+        self.obstacle = Obstacle::new(SCREEN_WIDTH  ,0);
         self.score = 0;
     }
 
@@ -205,7 +205,7 @@ impl State {
         }
 
         // if we have fallen off bottom of screen or hit an obstacle
-        if self.player.y > SCREEN_HEIGHT || self.obstacle.hit_obstacle(&self.player){
+        if (self.player.y as i32) > SCREEN_HEIGHT || self.obstacle.hit_obstacle(&self.player){
             // transition to End State
             self.mode = GameMode::End;
         }
